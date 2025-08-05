@@ -1,0 +1,21 @@
+{
+  "name": "ga4-connector",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google-analytics/data": "^5.1.0",
+    "@hasura/ndc-sdk-typescript": "^7.1.0",
+    "google-auth-library": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.3",
+    "typescript": "^5.8.3"
+  }
+}

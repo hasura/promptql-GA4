@@ -1,0 +1,15 @@
+kind: DataConnector
+version: v1
+definition:
+  name: ga4
+  title: Google Analytics 4 Connector
+  description: GA4 integration for Hasura DDN and PromptQL
+  configuration:
+  properties:
+    property_id:
+      type: string
+      description: GA4 Property ID (e.g., 123456789)
+    credentials:
+      type: string
+      description: Service account JSON credentials
+      format: password
