@@ -7,4 +7,4 @@ Requires config.json to be added in the root directory
 
 
 ### To run locally:
- `node dist/index.js serve --configuration config.json`
+ `node dist/index.js serve --port 8200 --configuration config.json`
