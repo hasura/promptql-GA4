@@ -83,8 +83,8 @@ export async function runQuery(
       filter: {
         fieldName: 'hostName',
         stringFilter: {
-          value: 'promptql.io', // Your target domain
-          matchType: 'EXACT' // Use 'CONTAINS' for partial matches
+          value: configuration.domain,
+          matchType: 'EXACT'
         }
       }
     }

@@ -16,6 +16,7 @@ import { readFile } from 'fs/promises';
 
 export interface GA4Configuration {
   property_id: string;
+  domain: string
   credentials: any;
 }
 
