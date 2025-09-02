@@ -35,13 +35,13 @@ program
 program
   .command("update")
   .description("Update configuration")
-  .requiredOption("-o, --output <path>", "output file path")
+  .requiredOption("-o, --outfile <path>", "output file path")
   .action(async (options: any) => {
     try {
-      const output = options.output;
+      const outputFile = options.outfile;
       const config = await generateConfiguration();
-      await writeFile(output, JSON.stringify(config, null, 2));
-      console.log(`Configuration generated successfully at ${output}`);
+      await writeFile(outputFile, JSON.stringify(config, null, 2));
+      console.log(`Configuration generated successfully at ${outputFile}`);
     } catch (error: any) {
       console.error(`Error generating configuration: ${error.message}`);
     }

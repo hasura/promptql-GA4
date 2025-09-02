@@ -1,7 +1,6 @@
 {
   "name": "ga4-connector",
-  "version": "1.0.0",
-  "main": "index.js",
+  "version": "0.1.0",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "npx prettier --write src/**/*.ts",
@@ -11,6 +10,7 @@
     "install-bin": "npm run build && npm install -g ."
   },
   "bin": {
+    "ga4-connector": "./dist/index.js",
     "ga4-connector-cli": "./dist/cli.js"
   },
   "keywords": [],
