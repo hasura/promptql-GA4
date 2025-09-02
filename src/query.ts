@@ -1,17 +1,17 @@
-import { BetaAnalyticsDataClient, protos } from '@google-analytics/data';
-import { GoogleServiceAccount } from './connector';
+import { BetaAnalyticsDataClient, protos } from "@google-analytics/data";
+import { GoogleAuthConfig } from "./google_auth";
 import {
   QueryRequest,
   QueryResponse,
   RowSet,
-  Field
-} from '@hasura/ndc-sdk-typescript';
+  Field,
+} from "@hasura/ndc-sdk-typescript";
 
-type RunReportRequest = protos.google.analytics.data.v1beta.IRunReportRequest;
+// type RunReportRequest = protos.google.analytics.data.v1beta.IRunReportRequest;
 
 interface LiteralDateRange {
-  type: 'literal';
-  value: any
+  type: "literal";
+  value: any;
 }
 
 interface QueryArguments {
@@ -19,12 +19,11 @@ interface QueryArguments {
   dateRange?: LiteralDateRange;
 }
 
-
 export async function runQuery(
   client: BetaAnalyticsDataClient,
   property_id: string,
   domain: string,
-  request: QueryRequest
+  request: QueryRequest,
 ): Promise<QueryResponse> {
   const fields: Record<string, Field> = request.query?.fields || {};
   const limit = request.query?.limit || 10000;
@@ -37,21 +36,21 @@ export async function runQuery(
   const requestedMetrics: Record<string, string> = {};
 
   for (const [fieldName, fieldDef] of Object.entries(fields)) {
-    if (fieldDef.type === 'column') {
+    if (fieldDef.type === "column") {
       const columnName = fieldDef.column;
-      if (columnName.startsWith('dimension_')) {
-        requestedDimensions[fieldName] = columnName.replace('dimension_', '');
-      } else if (columnName.startsWith('metric_')) {
-        requestedMetrics[fieldName] = columnName.replace('metric_', '');
+      if (columnName.startsWith("dimension_")) {
+        requestedDimensions[fieldName] = columnName.replace("dimension_", "");
+      } else if (columnName.startsWith("metric_")) {
+        requestedMetrics[fieldName] = columnName.replace("metric_", "");
       }
     }
   }
 
   // Handle date range with new structure
-  let startDate = '7daysAgo';
-  let endDate = 'today';
+  let startDate = "7daysAgo";
+  let endDate = "today";
 
-  if (args.dateRange && args.dateRange.type === 'literal') {
+  if (args.dateRange && args.dateRange.type === "literal") {
     const dateRangeValue = args.dateRange.value;
 
     // Support both snake_case and camelCase keys
@@ -75,20 +74,20 @@ export async function runQuery(
     property: `properties/${property_id}`,
     dateRanges: [{ startDate, endDate }],
     dimensions: [
-      ...Object.values(requestedDimensions).map(name => ({ name })),
-      { name: 'hostName' } // Must include hostName dimension
+      ...Object.values(requestedDimensions).map((name) => ({ name })),
+      { name: "hostName" }, // Must include hostName dimension
     ],
-    metrics: Object.values(requestedMetrics).map(name => ({ name })),
+    metrics: Object.values(requestedMetrics).map((name) => ({ name })),
     limit,
     dimensionFilter: {
       filter: {
-        fieldName: 'hostName',
+        fieldName: "hostName",
         stringFilter: {
           value: domain,
-          matchType: 'EXACT'
-        }
-      }
-    }
+          matchType: "EXACT",
+        },
+      },
+    },
   };
 
   // Execute GA4 API call
@@ -100,42 +99,51 @@ export async function runQuery(
   const errors: string[] = [];
 
   if (!response.rows || response.rows.length === 0) {
-    errors.push('No rows in GA4 response');
+    errors.push("No rows in GA4 response");
   } else {
     response.rows.forEach((row, index) => {
       const actualDimensions = row.dimensionValues?.length || 0;
       const actualMetrics = row.metricValues?.length || 0;
 
       if (actualDimensions < expectedDimensions) {
-        errors.push(`Row ${index} missing dimensions: expected ${expectedDimensions}, got ${actualDimensions}`);
+        errors.push(
+          `Row ${index} missing dimensions: expected ${expectedDimensions}, got ${actualDimensions}`,
+        );
       }
       if (actualMetrics < expectedMetrics) {
-        errors.push(`Row ${index} missing metrics: expected ${expectedMetrics}, got ${actualMetrics}`);
+        errors.push(
+          `Row ${index} missing metrics: expected ${expectedMetrics}, got ${actualMetrics}`,
+        );
       }
     });
   }
 
   if (errors.length > 0) {
-    throw new Error(`GA4 response validation failed: ${errors.join('; ')}`);
+    throw new Error(`GA4 response validation failed: ${errors.join("; ")}`);
   }
 
   // Map to requested fields
   const rowSet: RowSet = {
-    rows: response.rows?.map(row => {
-      const result: Record<string, any> = {};
+    rows:
+      response.rows?.map((row) => {
+        const result: Record<string, any> = {};
 
-      // Map dimensions
-      Object.entries(requestedDimensions).forEach(([fieldName, ga4Dim], index) => {
-        result[fieldName] = row.dimensionValues?.[index]?.value || null;
-      });
+        // Map dimensions
+        Object.entries(requestedDimensions).forEach(
+          ([fieldName, ga4Dim], index) => {
+            result[fieldName] = row.dimensionValues?.[index]?.value || null;
+          },
+        );
 
-      // Map metrics
-      Object.entries(requestedMetrics).forEach(([fieldName, ga4Metric], index) => {
-        result[fieldName] = row.metricValues?.[index]?.value || null;
-      });
+        // Map metrics
+        Object.entries(requestedMetrics).forEach(
+          ([fieldName, ga4Metric], index) => {
+            result[fieldName] = row.metricValues?.[index]?.value || null;
+          },
+        );
 
-      return result;
-    }) || []
+        return result;
+      }) || [],
   };
 
   return [rowSet];
@@ -152,8 +160,8 @@ function convertDateFormat(dateStr: string): string {
 
   // MM/DD/YYYY format
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-    const [month, day, year] = dateStr.split('/');
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const [month, day, year] = dateStr.split("/");
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   }
 
   throw new Error(`Unsupported date format: ${dateStr}`);

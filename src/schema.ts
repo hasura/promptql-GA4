@@ -1,70 +1,70 @@
-import { BetaAnalyticsDataClient } from '@google-analytics/data';
-import { GoogleServiceAccount } from './connector';
+import { protos } from "@google-analytics/data";
 import {
   SchemaResponse,
   CollectionInfo,
   Type,
   ObjectType,
-  ScalarType
-} from '@hasura/ndc-sdk-typescript';
+  ScalarType,
+} from "@hasura/ndc-sdk-typescript";
+
+export type GA4Metadata = protos.google.analytics.data.v1beta.IMetadata;
 
 export async function getSchema(
-  client: BetaAnalyticsDataClient,
-  property_id: string,
+  metadata: GA4Metadata,
 ): Promise<SchemaResponse> {
   try {
-    const [metadata] = await client.getMetadata({
-      name: `properties/${property_id}/metadata`
-    });
+    // const [metadata] = await client.getMetadata({
+    //   name: `properties/${property_id}/metadata`
+    // });
 
     // Define scalar types with proper representation
     const scalarTypes: Record<string, any> = {
       String: {
-        representation: { type: 'string' } as const, // Use const assertion
+        representation: { type: "string" } as const, // Use const assertion
         aggregate_functions: {},
-        comparison_operators: { _eq: { type: 'equal' } }
+        comparison_operators: { _eq: { type: "equal" } },
       },
       Float: {
-        representation: { type: 'number' } as const, // Use const assertion
+        representation: { type: "number" } as const, // Use const assertion
         aggregate_functions: {
-          sum: { result_type: { type: 'named', name: 'Float' } },
-          avg: { result_type: { type: 'named', name: 'Float' } }
+          sum: { result_type: { type: "named", name: "Float" } },
+          avg: { result_type: { type: "named", name: "Float" } },
         },
         comparison_operators: {
-          _eq: { type: 'equal' },
-          _gt: { type: 'greater_than' }
-        }
-      }
+          _eq: { type: "equal" },
+          _gt: { type: "greater_than" },
+        },
+      },
     };
 
     // Define DateRangeInput as an object type
     const dateRangeType: ObjectType = {
       fields: {
         startDate: {
-          type: { type: 'named', name: 'String' }
+          type: { type: "named", name: "String" },
         },
         endDate: {
-          type: { type: 'named', name: 'String' }
-        }
-      }
+          type: { type: "named", name: "String" },
+        },
+      },
     };
 
     // Define AnalyticsRow type for collection fields
     const analyticsRowType: ObjectType = {
-      fields: {}
+      fields: {},
     };
 
     // Add dimensions to AnalyticsRow
-    metadata.dimensions?.forEach(d => {
+    metadata.dimensions?.forEach((d) => {
       analyticsRowType.fields[`dimension_${d.apiName}`] = {
-        type: { type: 'named', name: 'String' }
+        type: { type: "named", name: "String" },
       };
     });
 
     // Add metrics to AnalyticsRow
-    metadata.metrics?.forEach(m => {
+    metadata.metrics?.forEach((m) => {
       analyticsRowType.fields[`metric_${m.apiName}`] = {
-        type: { type: 'named', name: 'Float' }
+        type: { type: "named", name: "Float" },
       };
     });
 
@@ -72,26 +72,28 @@ export async function getSchema(
       scalar_types: scalarTypes,
       object_types: {
         DateRangeInput: dateRangeType,
-        AnalyticsRow: analyticsRowType  // Define row type
+        AnalyticsRow: analyticsRowType, // Define row type
       },
-      collections: [{
-        name: 'analytics',
-        description: 'GA4 analytics data',
-        type: 'AnalyticsRow',  // Reference row type
-        arguments: {
-          dateRange: {
-            type: {
-              type: 'named',
-              name: 'DateRangeInput'
+      collections: [
+        {
+          name: "analytics",
+          description: "GA4 analytics data",
+          type: "AnalyticsRow", // Reference row type
+          arguments: {
+            dateRange: {
+              type: {
+                type: "named",
+                name: "DateRangeInput",
+              },
+              description: "Date range for report",
             },
-            description: 'Date range for report'
-          }
-        },
-        foreign_keys: {},
-        uniqueness_constraints: {}
-      } as CollectionInfo],
+          },
+          foreign_keys: {},
+          uniqueness_constraints: {},
+        } as CollectionInfo,
+      ],
       functions: [],
-      procedures: []
+      procedures: [],
     };
   } catch (error) {
     throw new Error(`GA4 metadata fetch failed: ${error}`);

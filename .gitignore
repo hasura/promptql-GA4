@@ -1,4 +1,5 @@
-config.json
+google_auth_config.json
+configuration.json
 node_modules/
 dist/
 .env
