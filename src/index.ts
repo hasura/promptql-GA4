@@ -7,7 +7,7 @@ const connector = new GA4Connector();
 // Override schema handler to use state
 connector.getSchema = async (configuration) => {
   const state = await connector.tryInitState(configuration, {});
-  return getSchema(state.analyticsDataClient, configuration);
+  return getSchema(state.analyticsDataClient, state.property_id);
 };
 
 start(connector);

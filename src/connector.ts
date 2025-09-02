@@ -1,8 +1,8 @@
-import { 
-  Connector, 
-  Capabilities, 
-  SchemaResponse, 
-  QueryRequest, 
+import {
+  Connector,
+  Capabilities,
+  SchemaResponse,
+  QueryRequest,
   QueryResponse,
   ExplainResponse,
   MutationRequest, // Add missing import
@@ -10,48 +10,56 @@ import {
 } from '@hasura/ndc-sdk-typescript';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { GoogleAuth } from 'google-auth-library';
-import { getSchema } from './schema';
+// import { getSchema } from './schema';
 import { runQuery } from './query';
 import { readFile } from 'fs/promises';
 
-export interface GA4Configuration {
+export interface GoogleServiceAccount {
   property_id: string;
   domain: string
   credentials: any;
 }
 
+export type GA4Configuration = {};
+
 interface GA4State {
   analyticsDataClient: BetaAnalyticsDataClient;
+  property_id: string;
+  domain: string;
 }
 
 export class GA4Connector implements Connector<GA4Configuration, GA4State> {
-  
+
   async parseConfiguration(configurationPath: string): Promise<GA4Configuration> {
-    try {
-      // 1. Read file content
-      const content = await readFile(configurationPath, 'utf-8');
+    // No configuration to pass. Connector only needs service account which will be initiated
+    // in tryInitState function.
+    return {}
+    // try {
+    //   // 1. Read file content
+    //   const content = await readFile(configurationPath, 'utf-8');
 
-      // 2. Parse JSON
-      const config = JSON.parse(content);
+    //   // 2. Parse JSON
+    //   const config = JSON.parse(content);
 
-      // 3. Validate required fields
-      if (!config.property_id || !config.credentials) {
-        throw new Error('Missing required configuration parameters');
-      }
+    //   // 3. Validate required fields
+    //   if (!config.property_id || !config.credentials) {
+    //     throw new Error('Missing required configuration parameters');
+    //   }
 
-      return config;
-    } catch (error: any) {
-      throw new Error(`Invalid configuration: ${error.message}`);
-    }
+    //   return config;
+    // } catch (error: any) {
+    //   throw new Error(`Invalid configuration: ${error.message}`);
+    // }
   }
 
   async tryInitState(
-    configuration: GA4Configuration,
+    _configuration: GA4Configuration,
     _metrics: Record<string, any>
   ): Promise<GA4State> {
     try {
+      const serviceAccount = await parseServiceAccount();
       // credentials is already an object - no need to parse!
-      const credentials = configuration.credentials;
+      const credentials = serviceAccount.credentials;
 
       const auth = new GoogleAuth({
         credentials: {
@@ -66,12 +74,14 @@ export class GA4Connector implements Connector<GA4Configuration, GA4State> {
       });
 
       return {
-        analyticsDataClient
+        analyticsDataClient,
+        property_id: serviceAccount.property_id,
+        domain: serviceAccount.domain
       };
     } catch (error: any) {
       throw new Error(`GA4 client initialization failed: ${error.message}`);
     }
-  }  
+  }
 
   async fetchMetrics(): Promise<undefined> {
     return undefined;
@@ -108,7 +118,7 @@ export class GA4Connector implements Connector<GA4Configuration, GA4State> {
     state: GA4State,
     request: QueryRequest
   ): Promise<QueryResponse> {
-    return runQuery(state.analyticsDataClient, configuration, request);
+    return runQuery(state.analyticsDataClient, state.property_id, state.domain, request);
   }
 
   async queryExplain(
@@ -135,5 +145,30 @@ export class GA4Connector implements Connector<GA4Configuration, GA4State> {
     request: MutationRequest // Correct type
   ): Promise<ExplainResponse> {
     throw new Error('Mutations are not supported for GA4 connector');
+  }
+}
+
+async function parseServiceAccount(): Promise <GoogleServiceAccount> {
+  // Check for GOOGLE_SERVICE_ACCOUNT_FILEPATH env var
+  const filePath = process.env.GOOGLE_SERVICE_ACCOUNT_FILEPATH;
+  if (!filePath) {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_FILEPATH env var not set');
+  }
+
+  try {
+    // 1. Read file content
+    const content = await readFile(filePath, 'utf-8');
+
+    // 2. Parse JSON
+    const config = JSON.parse(content);
+
+    // 3. Validate required fields
+    if (!config.property_id || !config.credentials) {
+      throw new Error('Missing required configuration parameters');
+    }
+
+    return config;
+  } catch (error: any) {
+    throw new Error(`Invalid configuration: ${error.message}`);
   }
 }

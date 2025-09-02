@@ -1,17 +1,17 @@
 import { BetaAnalyticsDataClient, protos } from '@google-analytics/data';
-import { GA4Configuration } from './connector';
-import { 
-  QueryRequest, 
-  QueryResponse, 
+import { GoogleServiceAccount } from './connector';
+import {
+  QueryRequest,
+  QueryResponse,
   RowSet,
-  Field 
+  Field
 } from '@hasura/ndc-sdk-typescript';
 
 type RunReportRequest = protos.google.analytics.data.v1beta.IRunReportRequest;
 
 interface LiteralDateRange {
   type: 'literal';
-  value: any 
+  value: any
 }
 
 interface QueryArguments {
@@ -22,7 +22,8 @@ interface QueryArguments {
 
 export async function runQuery(
   client: BetaAnalyticsDataClient,
-  configuration: GA4Configuration,
+  property_id: string,
+  domain: string,
   request: QueryRequest
 ): Promise<QueryResponse> {
   const fields: Record<string, Field> = request.query?.fields || {};
@@ -59,7 +60,7 @@ export async function runQuery(
 
     startDate = convertDateFormat(rawStart);
     endDate = convertDateFormat(rawEnd);
-  }  
+  }
 
   // // Build GA4 API request
   // const ga4Request: RunReportRequest = {
@@ -68,10 +69,10 @@ export async function runQuery(
   //   dimensions: Object.values(requestedDimensions).map(name => ({ name })),
   //   metrics: Object.values(requestedMetrics).map(name => ({ name })),
   //   limit
-  // }; 
+  // };
 
   const ga4Request: protos.google.analytics.data.v1beta.IRunReportRequest = {
-    property: `properties/${configuration.property_id}`,
+    property: `properties/${property_id}`,
     dateRanges: [{ startDate, endDate }],
     dimensions: [
       ...Object.values(requestedDimensions).map(name => ({ name })),
@@ -83,7 +84,7 @@ export async function runQuery(
       filter: {
         fieldName: 'hostName',
         stringFilter: {
-          value: configuration.domain,
+          value: domain,
           matchType: 'EXACT'
         }
       }
@@ -122,12 +123,12 @@ export async function runQuery(
   const rowSet: RowSet = {
     rows: response.rows?.map(row => {
       const result: Record<string, any> = {};
-      
+
       // Map dimensions
       Object.entries(requestedDimensions).forEach(([fieldName, ga4Dim], index) => {
         result[fieldName] = row.dimensionValues?.[index]?.value || null;
       });
-      
+
       // Map metrics
       Object.entries(requestedMetrics).forEach(([fieldName, ga4Metric], index) => {
         result[fieldName] = row.metricValues?.[index]?.value || null;

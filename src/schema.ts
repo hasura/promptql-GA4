@@ -1,5 +1,5 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
-import { GA4Configuration } from './connector';
+import { GoogleServiceAccount } from './connector';
 import {
   SchemaResponse,
   CollectionInfo,
@@ -10,11 +10,11 @@ import {
 
 export async function getSchema(
   client: BetaAnalyticsDataClient,
-  configuration: GA4Configuration
+  property_id: string,
 ): Promise<SchemaResponse> {
   try {
     const [metadata] = await client.getMetadata({
-      name: `properties/${configuration.property_id}/metadata`
+      name: `properties/${property_id}/metadata`
     });
 
     // Define scalar types with proper representation
