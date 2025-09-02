@@ -12,3 +12,6 @@ coverage/
 *.swp
 *.bak
 *.orig
+.gitignore
+.git
+.github
