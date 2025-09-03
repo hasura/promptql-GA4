@@ -10,7 +10,7 @@ import {
 export type GA4Metadata = protos.google.analytics.data.v1beta.IMetadata;
 
 export async function getSchema(
-  metadata: GA4Metadata,
+  metadata: GA4Metadata
 ): Promise<SchemaResponse> {
   try {
     // const [metadata] = await client.getMetadata({
@@ -41,10 +41,20 @@ export async function getSchema(
     const dateRangeType: ObjectType = {
       fields: {
         startDate: {
-          type: { type: "named", name: "String" },
+          type: {
+            type: "named",
+            name: "String",
+          },
+          description:
+            "Supported formats: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS, MM/DD/YYYY.",
         },
         endDate: {
-          type: { type: "named", name: "String" },
+          type: {
+            type: "named",
+            name: "String",
+          },
+          description:
+            "Supported formats: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS, MM/DD/YYYY.",
         },
       },
     };
