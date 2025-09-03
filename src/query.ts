@@ -1,11 +1,12 @@
 import { BetaAnalyticsDataClient, protos } from "@google-analytics/data";
-import { GoogleAuthConfig } from "./google_auth";
 import {
   QueryRequest,
   QueryResponse,
   RowSet,
   Field,
+  UnprocessableContent,
 } from "@hasura/ndc-sdk-typescript";
+import { parsePredicateFilters, buildGA4Filters } from "./filters";
 
 // type RunReportRequest = protos.google.analytics.data.v1beta.IRunReportRequest;
 
@@ -23,14 +24,17 @@ export async function runQuery(
   client: BetaAnalyticsDataClient,
   property_id: string,
   domain: string,
-  request: QueryRequest,
+  request: QueryRequest
 ): Promise<QueryResponse> {
   const fields: Record<string, Field> = request.query?.fields || {};
   const limit = request.query?.limit || 10000;
   const args: QueryArguments = request.arguments || {};
+  const predicate = request.query?.predicate;
 
   console.log("*************args from request***********");
   console.log(args);
+  console.log("*************predicate from request***********");
+  console.log(JSON.stringify(predicate, null, 2));
   // Track requested fields
   const requestedDimensions: Record<string, string> = {};
   const requestedMetrics: Record<string, string> = {};
@@ -61,6 +65,20 @@ export async function runQuery(
     endDate = convertDateFormat(rawEnd);
   }
 
+  // Parse predicate filters
+  const filterParseResult = parsePredicateFilters(predicate);
+
+  // Log filter parsing results
+  if (filterParseResult.errors.length > 0) {
+    console.log("Filter parsing errors:", filterParseResult.errors);
+  }
+  if (filterParseResult.dimensionFilters.length > 0) {
+    console.log("Dimension filters:", filterParseResult.dimensionFilters);
+  }
+  if (filterParseResult.metricFilters.length > 0) {
+    console.log("Metric filters:", filterParseResult.metricFilters);
+  }
+
   // // Build GA4 API request
   // const ga4Request: RunReportRequest = {
   //   property: `properties/${configuration.property_id}`,
@@ -69,6 +87,27 @@ export async function runQuery(
   //   metrics: Object.values(requestedMetrics).map(name => ({ name })),
   //   limit
   // };
+
+  // Build GA4 filters from parsed predicates
+  const hostDimensionFilter = {
+    filter: {
+      fieldName: "hostName", // Must include hostName dimension
+      stringFilter: {
+        value: domain,
+        matchType: "EXACT" as const,
+      },
+    },
+  };
+
+  const ga4Filters = buildGA4Filters(filterParseResult, hostDimensionFilter);
+
+  // Log filter building results and handle errors
+  if (ga4Filters.errors.length > 0) {
+    // Throw Error
+    throw new UnprocessableContent(
+      `Resolving filters failed: ${ga4Filters.errors.join("; ")}`
+    );
+  }
 
   const ga4Request: protos.google.analytics.data.v1beta.IRunReportRequest = {
     property: `properties/${property_id}`,
@@ -79,15 +118,10 @@ export async function runQuery(
     ],
     metrics: Object.values(requestedMetrics).map((name) => ({ name })),
     limit,
-    dimensionFilter: {
-      filter: {
-        fieldName: "hostName",
-        stringFilter: {
-          value: domain,
-          matchType: "EXACT",
-        },
-      },
-    },
+    ...(ga4Filters.dimensionFilter && {
+      dimensionFilter: ga4Filters.dimensionFilter,
+    }),
+    ...(ga4Filters.metricFilter && { metricFilter: ga4Filters.metricFilter }),
   };
 
   // Execute GA4 API call
@@ -107,12 +141,12 @@ export async function runQuery(
 
       if (actualDimensions < expectedDimensions) {
         errors.push(
-          `Row ${index} missing dimensions: expected ${expectedDimensions}, got ${actualDimensions}`,
+          `Row ${index} missing dimensions: expected ${expectedDimensions}, got ${actualDimensions}`
         );
       }
       if (actualMetrics < expectedMetrics) {
         errors.push(
-          `Row ${index} missing metrics: expected ${expectedMetrics}, got ${actualMetrics}`,
+          `Row ${index} missing metrics: expected ${expectedMetrics}, got ${actualMetrics}`
         );
       }
     });
@@ -129,18 +163,14 @@ export async function runQuery(
         const result: Record<string, any> = {};
 
         // Map dimensions
-        Object.entries(requestedDimensions).forEach(
-          ([fieldName, ga4Dim], index) => {
-            result[fieldName] = row.dimensionValues?.[index]?.value || null;
-          },
-        );
+        Object.entries(requestedDimensions).forEach(([fieldName], index) => {
+          result[fieldName] = row.dimensionValues?.[index]?.value || null;
+        });
 
         // Map metrics
-        Object.entries(requestedMetrics).forEach(
-          ([fieldName, ga4Metric], index) => {
-            result[fieldName] = row.metricValues?.[index]?.value || null;
-          },
-        );
+        Object.entries(requestedMetrics).forEach(([fieldName], index) => {
+          result[fieldName] = row.metricValues?.[index]?.value || null;
+        });
 
         return result;
       }) || [],
@@ -164,5 +194,7 @@ function convertDateFormat(dateStr: string): string {
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   }
 
-  throw new Error(`Unsupported date format: ${dateStr}`);
+  throw new UnprocessableContent(
+    `Unsupported date format: ${dateStr}. Expected formats: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS, MM/DD/YYYY.`
+  );
 }

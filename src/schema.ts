@@ -10,7 +10,7 @@ import {
 export type GA4Metadata = protos.google.analytics.data.v1beta.IMetadata;
 
 export async function getSchema(
-  metadata: GA4Metadata
+  metadata: GA4Metadata,
 ): Promise<SchemaResponse> {
   try {
     // const [metadata] = await client.getMetadata({
