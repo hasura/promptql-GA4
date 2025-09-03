@@ -5,6 +5,7 @@ import {
   RowSet,
   Field,
   UnprocessableContent,
+  BadGateway,
 } from "@hasura/ndc-sdk-typescript";
 import { parsePredicateFilters, buildGA4Filters } from "./filters";
 
@@ -24,7 +25,7 @@ export async function runQuery(
   client: BetaAnalyticsDataClient,
   property_id: string,
   domain: string,
-  request: QueryRequest
+  request: QueryRequest,
 ): Promise<QueryResponse> {
   const fields: Record<string, Field> = request.query?.fields || {};
   const limit = request.query?.limit || 10000;
@@ -105,7 +106,7 @@ export async function runQuery(
   if (ga4Filters.errors.length > 0) {
     // Throw Error
     throw new UnprocessableContent(
-      `Resolving filters failed: ${ga4Filters.errors.join("; ")}`
+      `Resolving filters failed: ${ga4Filters.errors.join("; ")}`,
     );
   }
 
@@ -125,7 +126,14 @@ export async function runQuery(
   };
 
   // Execute GA4 API call
-  const [response] = await client.runReport(ga4Request);
+  let response;
+  try {
+    [response] = await client.runReport(ga4Request);
+  } catch (error) {
+    throw new BadGateway(
+      `GA4 API call failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 
   // Validate response (NEW)
   const expectedDimensions = Object.keys(requestedDimensions).length;
@@ -141,12 +149,12 @@ export async function runQuery(
 
       if (actualDimensions < expectedDimensions) {
         errors.push(
-          `Row ${index} missing dimensions: expected ${expectedDimensions}, got ${actualDimensions}`
+          `Row ${index} missing dimensions: expected ${expectedDimensions}, got ${actualDimensions}`,
         );
       }
       if (actualMetrics < expectedMetrics) {
         errors.push(
-          `Row ${index} missing metrics: expected ${expectedMetrics}, got ${actualMetrics}`
+          `Row ${index} missing metrics: expected ${expectedMetrics}, got ${actualMetrics}`,
         );
       }
     });
@@ -195,6 +203,6 @@ function convertDateFormat(dateStr: string): string {
   }
 
   throw new UnprocessableContent(
-    `Unsupported date format: ${dateStr}. Expected formats: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS, MM/DD/YYYY.`
+    `Unsupported date format: ${dateStr}. Expected formats: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS, MM/DD/YYYY.`,
   );
 }

@@ -7,7 +7,7 @@ RUN npm update -g npm
 COPY ./ /app/
 WORKDIR /app
 
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 RUN npm run install-bin
 
 RUN mkdir /etc/connector

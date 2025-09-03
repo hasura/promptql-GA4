@@ -22,7 +22,13 @@ export async function getSchema(
       String: {
         representation: { type: "string" } as const, // Use const assertion
         aggregate_functions: {},
-        comparison_operators: { _eq: { type: "equal" } },
+        comparison_operators: {
+          _eq: { type: "equal" },
+          _like: {
+            type: "custom",
+            argument_type: { type: "named", name: "String" },
+          },
+        },
       },
       Float: {
         representation: { type: "number" } as const, // Use const assertion
@@ -32,7 +38,14 @@ export async function getSchema(
         },
         comparison_operators: {
           _eq: { type: "equal" },
-          _gt: { type: "greater_than" },
+          _gt: {
+            type: "custom",
+            argument_type: { type: "named", name: "Float" },
+          },
+          _lt: {
+            type: "custom",
+            argument_type: { type: "named", name: "Float" },
+          },
         },
       },
     };

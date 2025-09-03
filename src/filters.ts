@@ -28,6 +28,9 @@ type GA4FilterExpression =
 // Supported operators
 export const SUPPORTED_OPERATORS = {
   EQUAL: "_eq",
+  GREATER_THAN: "_gt",
+  LESS_THAN: "_lt",
+  LIKE: "_like",
 } as const;
 
 export type SupportedOperator =
@@ -47,9 +50,10 @@ export function validateFilterSupport(operator: string): {
   error?: string;
 } {
   if (!isSupportedOperator(operator)) {
+    const supportedOps = Object.values(SUPPORTED_OPERATORS).join(", ");
     return {
       isSupported: false,
-      error: `Operator '${operator}' is not supported. Only '${SUPPORTED_OPERATORS.EQUAL}' (equal) is currently supported.`,
+      error: `Operator '${operator}' is not supported. Supported operators: ${supportedOps}`,
     };
   }
   return { isSupported: true };
@@ -57,7 +61,11 @@ export function validateFilterSupport(operator: string): {
 
 /**
  * Parse NDC Expression AST to extract dimension and metric filters
- * Currently only supports 'equal' operator (_eq)
+ * Supports:
+ * - _eq (equal): dimensions and metrics
+ * - _gt (greater than): metrics only
+ * - _lt (less than): metrics only
+ * - _like (LIKE pattern): dimensions only
  */
 export function parsePredicateFilters(
   predicate: Expression | null | undefined,
@@ -167,6 +175,27 @@ function parseBinaryComparison(
   const value = extractComparisonValue(expression.value);
   if (value === null || value === undefined) {
     result.errors.push("Failed to extract value from comparison");
+    return;
+  }
+
+  // Validate operator compatibility with column type
+  if (
+    columnInfo.isDimension &&
+    (expression.operator === "_gt" || expression.operator === "_lt")
+  ) {
+    result.errors.push(
+      `Operator '${expression.operator}' is not supported for dimensions. Only '_eq' and '_like' are supported for dimensions.`,
+    );
+    return;
+  }
+
+  if (
+    columnInfo.isMetric &&
+    expression.operator === "_like"
+  ) {
+    result.errors.push(
+      `Operator '${expression.operator}' is not supported for metrics. Only '_eq', '_gt', and '_lt' are supported for metrics.`,
+    );
     return;
   }
 
@@ -356,7 +385,7 @@ function createGA4DimensionFilter(
   // Remove dimension_ prefix to get GA4 field name
   const fieldName = filter.columnName.replace("dimension_", "");
 
-  // Only support string filters with EXACT match for now
+  // Ensure filter value is a string
   if (typeof filter.value !== "string") {
     errors.push(
       `Dimension filter value must be a string, got: ${typeof filter.value}`,
@@ -364,13 +393,29 @@ function createGA4DimensionFilter(
     return null;
   }
 
-  return {
-    fieldName,
-    stringFilter: {
-      value: String(filter.value),
-      matchType: "EXACT" as const,
-    },
-  };
+  const stringValue = String(filter.value);
+
+  // Handle different operators
+  if (filter.operator === "_eq") {
+    return {
+      fieldName,
+      stringFilter: {
+        value: stringValue,
+        matchType: "EXACT" as const,
+      },
+    };
+  } else if (filter.operator === "_like") {
+    return {
+      fieldName,
+      stringFilter: {
+        value: stringValue,
+        matchType: "PARTIAL_REGEXP" as const,
+      },
+    };
+  } else {
+    errors.push(`Unsupported dimension filter operator: ${filter.operator}`);
+    return null;
+  }
 }
 
 /**
@@ -390,10 +435,27 @@ function createGA4MetricFilter(
     return null;
   }
 
+  // Map NDC operator to GA4 operation
+  let operation: "EQUAL" | "GREATER_THAN" | "LESS_THAN";
+  switch (filter.operator) {
+    case "_eq":
+      operation = "EQUAL";
+      break;
+    case "_gt":
+      operation = "GREATER_THAN";
+      break;
+    case "_lt":
+      operation = "LESS_THAN";
+      break;
+    default:
+      errors.push(`Unsupported metric filter operator: ${filter.operator}`);
+      return null;
+  }
+
   return {
     fieldName,
     numericFilter: {
-      operation: "EQUAL" as const,
+      operation,
       value: {
         doubleValue: numericValue,
       },
