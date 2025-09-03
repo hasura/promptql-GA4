@@ -10,7 +10,7 @@ import {
 export type GA4Metadata = protos.google.analytics.data.v1beta.IMetadata;
 
 export async function getSchema(
-  metadata: GA4Metadata,
+  metadata: GA4Metadata
 ): Promise<SchemaResponse> {
   try {
     // const [metadata] = await client.getMetadata({
@@ -81,6 +81,7 @@ export async function getSchema(
     metadata.dimensions?.forEach((d) => {
       analyticsRowType.fields[`dimension_${d.apiName}`] = {
         type: { type: "named", name: "String" },
+        description: d.description,
       };
     });
 
@@ -88,6 +89,7 @@ export async function getSchema(
     metadata.metrics?.forEach((m) => {
       analyticsRowType.fields[`metric_${m.apiName}`] = {
         type: { type: "named", name: "Float" },
+        description: m.description,
       };
     });
 
