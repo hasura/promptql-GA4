@@ -13,6 +13,7 @@ commands:
     type: Dockerized
     dockerImage: ghcr.io/hasura/ndc-promptql-ga4:v0.1.0
     commandArgs:
+      - "ga4-connector-cli"
       - "update"
       - "--outfile"
       - "/etc/connector/configuration.json"

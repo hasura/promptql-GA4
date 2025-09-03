@@ -1,5 +1,7 @@
 FROM node:20-alpine
 
+RUN apk add --no-cache bash
+
 RUN npm update -g npm
 
 COPY ./ /app/
@@ -10,7 +12,5 @@ RUN npm run install-bin
 
 RUN mkdir /etc/connector
 WORKDIR /etc/connector
-
-ENTRYPOINT ["ga4-connector-cli"]
 
 CMD ["ga4-connector", "serve", "--configuration", "configuration.json"]

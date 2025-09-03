@@ -11,10 +11,26 @@ export interface GoogleAuthConfig {
 
 export async function parseGoogleAuth(): Promise<GoogleAuthConfig> {
   // GOOGLE_AUTH_CONFIG_FILEPATH env var
-  const filePath =
+  let filePath =
     process.env.GOOGLE_AUTH_CONFIG_FILEPATH ||
     DEFAULT_GOOGLE_AUTH_CONFIG_FILEPATH;
-  const fullPath = getUserMountedFilePath() + filePath;
+
+  let configDir = getUserMountedFilePath();
+
+  // Ensure proper pathing. Remove leading slash if present
+  if (filePath.startsWith("/")) {
+    filePath = filePath.slice(1);
+  }
+  if (filePath.startsWith("./")) {
+    filePath = filePath.slice(2);
+  }
+
+  // Remove trailing slash if present
+  if (configDir.endsWith("/")) {
+    configDir = configDir.slice(0, -1);
+  }
+
+  const fullPath = configDir + "/" + filePath;
 
   try {
     // 1. Read file content
