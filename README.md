@@ -1,10 +1,23 @@
 # promptql-GA4
 
-Requires config.json to be added in the root directory
+Requires `google_auth_config.json` to be added in the root directory
+
+```json
+{
+    "property_id": "123456789",
+    "domain": "example.com",
+    "credentials": { <service account json credentials> }
+}
+```
 
 ### To compile:
- `npx ts`
 
+`npm run build`
 
-### To run locally:
- `node dist/index.js serve --port 8200 --configuration config.json`
+### To generate `configuration.json`:
+
+`npm run generate-config`
+
+### To start connector:
+
+`npm run start`

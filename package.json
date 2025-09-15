@@ -1,9 +1,17 @@
 {
   "name": "ga4-connector",
-  "version": "1.0.0",
-  "main": "index.js",
+  "version": "0.1.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "npx prettier --write src/**/*.ts",
+    "build": "tsc",
+    "generate-config": "HASURA_PLUGIN_CONNECTOR_CONTEXT_PATH=./ GOOGLE_AUTH_CONFIG_FILEPATH=google_auth_config.json node dist/cli.js update --output configuration.json",
+    "start": "HASURA_CONFIGURATION_DIRECTORY=./ GOOGLE_AUTH_CONFIG_FILEPATH=google_auth_config.json node dist/index.js serve --port 8200 --configuration configuration.json",
+    "install-bin": "npm run build && npm install -g ."
+  },
+  "bin": {
+    "ga4-connector": "./dist/index.js",
+    "ga4-connector-cli": "./dist/cli.js"
   },
   "keywords": [],
   "author": "",
@@ -12,6 +20,7 @@
   "dependencies": {
     "@google-analytics/data": "^5.1.0",
     "@hasura/ndc-sdk-typescript": "^7.1.0",
+    "commander": "^14.0.0",
     "google-auth-library": "^10.1.0",
     "undici": "^7.13.0",
     "undici-types": "^7.13.0"
