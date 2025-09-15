@@ -1,6 +1,6 @@
-# Google Analytics 4 Connector for Hasura DDN and PromptQL
+# Google Analytics (GA4) Connector for Hasura DDN and PromptQL
 
-A powerful data connector that enables natural language queries against Google Analytics 4 data through Hasura DDN and PromptQL. Query your GA4 analytics data using plain English and get structured results.
+A powerful data connector that enables natural language queries against Google Analytics data through Hasura DDN and PromptQL. Query your GA4 analytics data using plain English and get structured results.
 
 ## Features
 
