@@ -1,6 +1,6 @@
-# Google Analytics (GA4) Connector for Hasura DDN and PromptQL
+# Google Analytics (GA4) Connector for PromptQL
 
-A powerful data connector that enables natural language queries against Google Analytics data through Hasura DDN and PromptQL. Query your GA4 analytics data using plain English and get structured results.
+A powerful data connector that enables natural language queries against Google Analytics data through PromptQL. Query your GA4 analytics data using plain English and get structured results.
 
 ## Features
 
@@ -9,7 +9,7 @@ A powerful data connector that enables natural language queries against Google A
 - 🔒 **Secure Authentication**: Service account-based authentication with Google Analytics
 - 🐳 **Docker Ready**: Pre-built Docker images for easy deployment
 - ⚡ **High Performance**: Built with TypeScript and optimized for speed
-- 🔧 **Hasura Integration**: Seamless integration with Hasura DDN
+- 🔧 **PromptQL Integration**: Seamless integration with PromptQL for natural language analytics
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ Before using this connector, you'll need:
 
 1. **Google Analytics 4 Property**: A GA4 property with data
 2. **Google Cloud Service Account**: With Analytics Reporting API access
-3. **Hasura DDN**: For running the connector (optional for standalone use)
+3. **PromptQL**: For natural language query capabilities (optional for standalone use)
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ Create a `google_auth_config.json` file in your project directory:
 
 ### 2. Installation and Setup
 
-#### Option A: Using Docker (Recommended)
+#### Option A: Using Docker
 
 ```bash
 # Pull the pre-built image
@@ -117,3 +117,7 @@ Once running, the connector exposes these endpoints:
 - `GET /capabilities` - Get connector capabilities
 - `GET /schema` - Get the data schema
 - `POST /query` - Execute queries
+
+## Available Dimensions and Metrics
+
+The connector automatically discovers and exposes all available GA4 dimensions and metrics from your property. For a complete reference of available dimensions and metrics, see the [GA4 Dimensions & Metrics Explorer](https://ga-dev-tools.google/ga4/dimensions-metrics-explorer/).
