@@ -2,8 +2,8 @@ kind: DataConnector
 version: v1
 definition:
   name: ga4
-  title: Google Analytics 4 Connector
-  description: GA4 integration for Hasura DDN and PromptQL
+  title: Google Analytics 4 Connector for PromptQL
+  description: GA4 integration for PromptQL natural language analytics
   configuration:
   properties:
     property_id:
