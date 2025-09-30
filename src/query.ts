@@ -32,10 +32,6 @@ export async function runQuery(
   const args: QueryArguments = request.arguments || {};
   const predicate = request.query?.predicate;
 
-  console.log("*************args from request***********");
-  console.log(args);
-  console.log("*************predicate from request***********");
-  console.log(JSON.stringify(predicate, null, 2));
   // Track requested fields
   const requestedDimensions: Record<string, string> = {};
   const requestedMetrics: Record<string, string> = {};
@@ -68,17 +64,6 @@ export async function runQuery(
 
   // Parse predicate filters
   const filterParseResult = parsePredicateFilters(predicate);
-
-  // Log filter parsing results
-  if (filterParseResult.errors.length > 0) {
-    console.log("Filter parsing errors:", filterParseResult.errors);
-  }
-  if (filterParseResult.dimensionFilters.length > 0) {
-    console.log("Dimension filters:", filterParseResult.dimensionFilters);
-  }
-  if (filterParseResult.metricFilters.length > 0) {
-    console.log("Metric filters:", filterParseResult.metricFilters);
-  }
 
   // // Build GA4 API request
   // const ga4Request: RunReportRequest = {
@@ -135,33 +120,47 @@ export async function runQuery(
     );
   }
 
-  // Validate response (NEW)
+  // Validate response
   const expectedDimensions = Object.keys(requestedDimensions).length;
   const expectedMetrics = Object.keys(requestedMetrics).length;
   const errors: string[] = [];
 
-  if (!response.rows || response.rows.length === 0) {
-    errors.push("No rows in GA4 response");
-  } else {
-    response.rows.forEach((row, index) => {
-      const actualDimensions = row.dimensionValues?.length || 0;
-      const actualMetrics = row.metricValues?.length || 0;
 
-      if (actualDimensions < expectedDimensions) {
-        errors.push(
-          `Row ${index} missing dimensions: expected ${expectedDimensions}, got ${actualDimensions}`,
-        );
+  if (!response.rows || response.rows.length === 0) {
+    const requestedDims = Object.values(requestedDimensions).join(", ");
+    const requestedMets = Object.values(requestedMetrics).join(", ");
+    throw new UnprocessableContent(
+      `No data available for the requested dimension/metric combination. ` +
+      `Dimensions: [${requestedDims}], Metrics: [${requestedMets}]. ` +
+      `Try using different dimensions or metrics, or adjust the date range and filters.`,
+      {
+        requested_dimensions: Object.values(requestedDimensions),
+        requested_metrics: Object.values(requestedMetrics),
+        suggestion: "Try different dimension/metric combinations or adjust filters"
       }
-      if (actualMetrics < expectedMetrics) {
-        errors.push(
-          `Row ${index} missing metrics: expected ${expectedMetrics}, got ${actualMetrics}`,
-        );
-      }
-    });
+    );
   }
 
+  // Validate row structure
+  response.rows.forEach((row, index) => {
+    const actualDimensions = row.dimensionValues?.length || 0;
+    const actualMetrics = row.metricValues?.length || 0;
+
+    if (actualDimensions < expectedDimensions) {
+      errors.push(
+        `Row ${index} missing dimensions: expected ${expectedDimensions}, got ${actualDimensions}`,
+      );
+    }
+    if (actualMetrics < expectedMetrics) {
+      errors.push(
+        `Row ${index} missing metrics: expected ${expectedMetrics}, got ${actualMetrics}`,
+      );
+    }
+  });
+
+  // Throw error for structural issues
   if (errors.length > 0) {
-    throw new Error(`GA4 response validation failed: ${errors.join("; ")}`);
+    throw new UnprocessableContent(`GA4 response validation failed: ${errors.join("; ")}`);
   }
 
   // Map to requested fields
