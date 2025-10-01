@@ -2,7 +2,7 @@ version: v2
 ndcSpecGeneration: v0.2
 packagingDefinition:
   type: PrebuiltDockerImage
-  dockerImage: ghcr.io/hasura/ndc-promptql-ga4:v0.1.0
+  dockerImage: ghcr.io/hasura/ndc-promptql-ga4:v0.1.1
 supportedEnvironmentVariables:
   - name: GOOGLE_AUTH_CONFIG_FILEPATH
     description: Filepath for the Google Auth config file relative to the connector directory.
@@ -11,7 +11,7 @@ supportedEnvironmentVariables:
 commands:
   update:
     type: Dockerized
-    dockerImage: ghcr.io/hasura/ndc-promptql-ga4:v0.1.0
+    dockerImage: ghcr.io/hasura/ndc-promptql-ga4:v0.1.1
     commandArgs:
       - "ga4-connector-cli"
       - "update"
@@ -19,7 +19,7 @@ commands:
       - "/etc/connector/configuration.json"
 cliPlugin:
   type: Docker
-  dockerImage: ghcr.io/hasura/ndc-promptql-ga4:v0.1.0
+  dockerImage: ghcr.io/hasura/ndc-promptql-ga4:v0.1.1
 dockerComposeWatch:
   # Rebuild the container if a new package restore is required because package[-lock].json changed
   - path: package.json
