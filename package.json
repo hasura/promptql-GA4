@@ -1,11 +1,11 @@
 {
   "name": "ga4-connector",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "npx prettier --write src/**/*.ts",
     "build": "tsc",
-    "generate-config": "HASURA_PLUGIN_CONNECTOR_CONTEXT_PATH=./ GOOGLE_AUTH_CONFIG_FILEPATH=google_auth_config.json node dist/cli.js update --output configuration.json",
+    "generate-config": "HASURA_PLUGIN_CONNECTOR_CONTEXT_PATH=./ GOOGLE_AUTH_CONFIG_FILEPATH=google_auth_config.json node dist/cli.js update --outfile configuration.json",
     "start": "HASURA_CONFIGURATION_DIRECTORY=./ GOOGLE_AUTH_CONFIG_FILEPATH=google_auth_config.json node dist/index.js serve --port 8200 --configuration configuration.json",
     "install-bin": "npm run build && npm install -g ."
   },
