@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM us-docker.pkg.dev/hasura-container-images/external-images/docker.io/library/node:20-alpine-stable
 
 RUN apk add --no-cache bash
 
